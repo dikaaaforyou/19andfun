@@ -1,0 +1,535 @@
+<script>
+    import { fly, scale } from 'svelte/transition';
+    import { goto } from '$app/navigation';
+
+    // DATA KARTU
+    let cards = [
+        {
+            id: 1,
+            type: 'cover',
+            bgClass: 'bg-lavender',
+            name: 'Username'
+        },
+        {
+            id: 2,
+            type: 'text',
+            bgClass: 'bg-paper',
+            image: 'https://media1.giphy.com/media/pWO49XP9L7TxbgQVib/200.gif?cid=f91fd6196qfss9tvlh5nb5x9jg9w94lajuit01pv96o4i6h2&ep=v1_gifs_search&rid=200.gif&ct=g',
+            text: 'Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa',
+            from: '- Jcllynnaf',
+            color: '#000'
+        },
+        {
+            id: 3,
+            type: 'text',
+            bgClass: 'bg-paper',
+            image: 'https://media0.giphy.com/media/v1.Y2lkPTNhYWU4ZTViMWIxbTg3anlhMHdiMGU0dmhzeThieDhldnNsaW80OWN1ZDhuZDI3aCZlcD12MV9zdGlja2Vyc19zZWFyY2gmY3Q9cw/YMdExG8wRmNxtMQBJe/200.gif',
+            text: 'Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa',
+            from: '- Jcllynnaf',
+            color: '#be185d'
+        },
+        {
+            id: 4,
+            type: 'text',
+            bgClass: 'bg-paper',
+            image: 'https://media0.giphy.com/media/v1.Y2lkPTNhYWU4ZTViM3h0djV5OHJudXRhbGdpZ2pyZnc3YTRrMTd6ejFnOHNwajZrZG0yYyZlcD12MV9zdGlja2Vyc19zZWFyY2gmY3Q9cw/l3mZaDLAkulVmve5a/200.gif',
+            text: 'Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa, Gatau mau isi apa',
+            from: '- Jcllynnaf',
+            color: '#be185d'
+        },
+        {
+            id: 5,
+            type: 'spotify',
+            title: 'A Song for You',
+            trackId: '38Z9ira4cManq7mw70Px81?si=57a74799fb1d4d6b'
+        }, 
+        {
+            id: 6,
+            type: 'final',
+            bgClass: 'bg-gradient-pink',
+            text: 'Look at our memories!'
+        },
+    ];
+
+    // === LOGIKA SWIPE & INFINITE LOOP ===
+    let startX = 0;
+    let currentX = 0;
+    let isDragging = false;
+
+    function startDrag(e) {
+        isDragging = true;
+        // Deteksi apakah mouse atau sentuhan jari
+        startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+    }
+
+    function onDrag(e) {
+        if (!isDragging) return;
+        const x = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        currentX = x - startX; // Hitung jarak geser
+    }
+
+    function endDrag() {
+        if (!isDragging) return;
+        isDragging = false;
+        
+        // Logic Swipe: Kalau geser lebih dari 100px, ganti kartu
+        if (Math.abs(currentX) > 100) {
+            if (currentX < 0) nextCard(); // Geser Kiri -> Next (Move to back)
+            else prevCard();              // Geser Kanan -> Prev (Move to front)
+        }
+        
+        currentX = 0; // Reset posisi
+    }
+
+    // Fungsi "Slide ke Belakang" (Infinite Loop)
+    function nextCard() { 
+        // Ambil kartu pertama, pindahkan ke paling belakang
+        const first = cards[0];
+        cards = [...cards.slice(1), first];
+    }
+
+    function prevCard() { 
+        // Ambil kartu terakhir, pindahkan ke paling depan
+        const last = cards[cards.length - 1];
+        cards = [last, ...cards.slice(0, cards.length - 1)];
+    }
+
+    function openGift() {
+    goto('/photobooth');
+    }
+
+    function openGallery() {
+    goto('/memories');
+}
+</script>
+
+<svelte:window 
+    on:mousemove={onDrag} 
+    on:mouseup={endDrag} 
+    on:touchmove={onDrag} 
+    on:touchend={endDrag} 
+/>
+
+<div class="scene-container">
+    
+    <div class="top-indicator">
+        Card from your colleagues
+    </div>
+
+    <div class="stack-wrapper">
+        
+        <div class="backing-card purple-accent"></div>
+
+        {#each cards.slice(0, 3).reverse() as card, i (card.id)}
+            {@const displayIndex = (cards.slice(0, 3).length - 1) - i}
+            
+            <div 
+                class="card-base {card.bgClass}"
+                class:active-card={displayIndex === 0}
+                class:dragging={displayIndex === 0 && isDragging} 
+                
+                on:mousedown={displayIndex === 0 ? startDrag : null}
+                on:touchstart={displayIndex === 0 ? startDrag : null}
+
+                style="
+                    z-index: {100 - displayIndex};
+                    
+                    /* LOGIKA TRANSFORMASI: STACK + SWIPE */
+                    transform: 
+                        {displayIndex === 0 && isDragging 
+                            /* 1. KARTU PALING ATAS (SAAT DI-DRAG) */
+                            ? `translate(${currentX}px, ${currentX * 0.1}px) rotate(${currentX * 0.05}deg)` 
+                            : 
+                            /* 2. POSISI TUMPUKAN (STATIC / MESSY LOOK) */
+                            displayIndex === 0 ? 'rotate(0deg)' :
+                            displayIndex === 1 ? 'translate(8px, -5px) rotate(3deg)' :  /* Miring Kanan */
+                            displayIndex === 2 ? 'translate(-8px, 5px) rotate(-2deg)' : '' /* Miring Kiri */
+                        };
+                "
+                in:scale={{ duration: 300, start: 0.9 }}
+                out:fly={{ x: -300, opacity: 0, duration: 500 }}
+            >
+                {#if card.type === 'cover'}
+                    <div class="cover-design">
+                        <div class="abstract-bg"></div>
+                        <div class="content-wrapper">
+                            <div class="happy-row">
+                                <span class="char c1">H</span><span class="char c2">A</span><span class="char c3">P</span><span class="char c4">P</span><span class="char c5">Y</span>
+                            </div>
+                            <h1 class="birthday-title">BIRTHDAY</h1>
+                            <div class="name-badge">For {card.name} ❤️</div>
+                        </div>
+                    </div>
+
+                {:else if card.type === 'text'}
+                    <div class="text-design">
+                        <div class="polaroid">
+                            <img src={card.image} alt="Gif" loading="lazy">
+                            <span class="icon-sparkle top-right">✨</span>
+                            <span class="icon-sparkle bottom-left">💖</span>
+                        </div>
+                        <p class="msg" style="color: {card.color || '#555'}">"{card.text}"</p>
+                        <span class="sender" style="color: {card.color || '#555'}">{card.from}</span>
+                    </div>
+
+                {:else if card.type === 'spotify'}
+                    <div class="spotify-clean-card">
+                        {#if card.title}
+                            <h3 class="spotify-header">{card.title}</h3>
+                        {/if}
+
+                        <div class="single-track-wrapper">
+                            <iframe 
+                                src="https://open.spotify.com/embed/track/{card.trackId}?utm_source=generator&theme=0" 
+                                width="100%" 
+                                height="352" 
+                                frameBorder="0" 
+                                allowfullscreen="" 
+                                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                                loading="lazy">
+                            </iframe>
+                        </div>
+                    </div>
+
+                {:else if card.type === 'final'}
+                        <div class="final-design">
+                            <div class="photo-stack-art">
+                                <div class="photo-leaf p1"></div>
+                                <div class="photo-leaf p2"></div>
+                                <div class="photo-leaf p3">
+                                    <div class="inner-photo">
+                                        <div class="heart-icon">❤️</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h2 class="gamja-font">Photo Memory</h2>
+                            <p class="gamja-font">{card.text}</p>
+                            
+                            <button class="reply-btn gamja-font" on:click={openGallery}>
+                                Tap to Open
+                            </button>
+                        </div>
+                    {/if}
+            </div>
+        {/each}
+
+    </div>
+
+    <div class="controls-area">
+        <div class="buttons-row">
+            <button on:click={prevCard} class="nav-btn prev">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <button on:click={openGift} class="action-btn">Snap Studio</button>  
+            <button on:click={nextCard} class="nav-btn next">
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap');
+    
+    /* === LAYOUT UTAMA === */
+    .scene-container {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        perspective: 1000px;
+    }
+
+    /* === HEADER === */
+    .top-indicator {
+        position: absolute;
+        top: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 100;
+        background: rgba(255,255,255,0.6);
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        color: #64748b;
+        backdrop-filter: blur(4px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    /* === WRAPPER KARTU === */
+    .stack-wrapper {
+        position: absolute;
+        top: 50%; 
+        left: 50%;
+        transform: translate(-50%, -50%); 
+        width: 330px; 
+        height: 460px; 
+        z-index: 10;
+        margin-top: -30px;
+    }
+
+    /* === BACKGROUND ACCENT CARD === */
+    .backing-card {
+        position: absolute; inset: 0;
+        border-radius: 0; /* Samakan dengan border-radius card-base */
+        z-index: -1;
+        transform: translate(-12px, -8px) rotate(-4deg); /* Miring ke kiri belakang */
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    .purple-accent { background: #d8b4fe; } 
+
+    /* === CARD BASE STYLE === */
+    .card-base {
+        position: absolute;
+        inset: 0;
+        border-radius: 0; /* Lebih rounded biar modern */
+        background: white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* Shadow lembut */
+        border: 1px solid rgba(0,0,0,0.05);
+        overflow: hidden;
+        transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s;
+        transform-origin: center center;
+        user-select: none;
+        touch-action: none;
+    }
+
+    .card-base.dragging {
+        transition: none !important;
+        cursor: grabbing;
+        box-shadow: 0 20px 40px -5px rgba(0,0,0,0.2);
+    }
+
+    .active-card {
+    }
+
+    /* === TOMBOL CONTROLS === */
+    .controls-area {
+        position: absolute;
+        bottom: 80px; 
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 320px;
+        z-index: 20;
+    }
+    
+    .buttons-row { 
+        display: flex; gap: 15px; width: 100%; justify-content: space-between; align-items: center; 
+    }
+
+    .nav-btn { 
+        width: 50px;
+        height: 50px; 
+        border-radius: 50%; 
+        border: none; 
+        background: white; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+        font-size: 1.2rem; 
+        cursor: pointer; 
+        color: #1e293b;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .nav-btn:hover { transform: scale(1.1); background: #f8fafc; }
+    
+    .action-btn { 
+        flex: 1;
+        height: 50px;
+        background: rgba(242, 32, 172, 0.685); 
+        border: 1px solid rgb(255, 255, 255); 
+        border-radius: 50px; 
+        font-weight: bold; 
+        color: #fcfcfc; 
+        cursor: pointer;
+        backdrop-filter: blur(4px); 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    /* === BACKGROUND UTILITY === */
+    .bg-lavender { background: #f3e8ff; }
+    .bg-paper { background: #fff; background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; }
+    .bg-gradient-pink { background: linear-gradient(135deg, #fbcfe8, #f472b6); }
+
+    /* === CONTENT STYLES (Sama seperti sebelumnya) === */
+    .cover-design { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+    .abstract-bg { position: absolute; inset: -50px; background: radial-gradient(circle at 80% 20%, #fde047 0%, transparent 40%), radial-gradient(circle at 20% 80%, #f472b6 0%, transparent 40%); filter: blur(40px); opacity: 0.6; }
+    .content-wrapper { z-index: 10; text-align: center; }
+    .happy-row { display: flex; gap: 5px; justify-content: center; margin-bottom: 1px; }
+    .char { font-family: 'Fredoka One', cursive; font-size: 4rem; color: white; text-shadow: 3px 3px 0px rgba(0,0,0,0.1); display: inline-block; }
+    .c1 { transform: rotate(-5deg); text-shadow: 3px 3px 0 #ec4899; }
+    .c2 { transform: rotate(3deg); text-shadow: 3px 3px 0 #a855f7; }
+    .c3 { transform: rotate(-3deg); text-shadow: 3px 3px 0 #eab308; }
+    .c4 { transform: rotate(5deg); text-shadow: 3px 3px 0 #3b82f6; }
+    .c5 { transform: rotate(-4deg); text-shadow: 3px 3px 0 #f43f5e; }
+    .birthday-title { font-family: 'Fredoka One', cursive; font-size: 3rem; color: #334155; letter-spacing: 2px; margin: 0; }
+    .name-badge { margin-top: 20px; background: white; padding: 15px 25px; border-radius: 50px; font-family: 'Handlee', cursive; font-weight: bold; color: #475569; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transform: rotate(-2deg); display: inline-block; }
+
+    .text-design { padding: 20px; height: 100%; display: flex; flex-direction: column; font-family: 'Handlee', cursive; }
+    .polaroid {
+    position: relative;
+    background-color: #fff;
+    background-image: url("https://www.transparenttextures.com/patterns/cream-paper.png");
+    padding: 10px 10px 15px 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    transform: rotate(2deg);
+    margin-bottom: 30px;
+}
+    .polaroid img { width: 100%; height: 180px; object-fit: contain; display: block; pointer-events: none; }
+    .polaroid::before {
+    content: "";
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-2deg);
+    width: 60px;
+    height: 20px;
+    background: rgba(244, 114, 182, 0.5); /* Warna pink transparan */
+    backdrop-filter: blur(2px);
+    z-index: 2;
+}
+    .msg { font-family: 'Gamja Flower', cursive; font-size: 1.2rem; color: #334155; line-height: 1.5; text-align: center; }
+    .sender { font-family: 'Gamja Flower', cursive; margin-top: auto; text-align: right; font-weight: bold; color: #94a3b8; }
+
+    .final-design { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+    .big-icon { font-size: 4rem; margin-bottom: 10px; }
+    .final-design h2 { font-family: 'Fredoka One'; color: #be185d; font-size: 2rem; margin: 0 0 10px 0; }
+    .reply-btn { margin-top: 30px; background: #1e293b; color: white; padding: 12px 30px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; transition: transform 0.2s; }
+    .reply-btn:active { transform: scale(0.95); }
+
+    .spotify-clean-card {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(180deg, #08780a 0%, #000000 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
+        border-radius: 0px;
+    }
+
+    .spotify-header {
+        font-family: 'Fredoka One', cursive;
+        color: #ffffff;
+        margin-bottom: 20px;
+        font-size: 1.2rem;
+    }
+
+    .single-track-wrapper {
+        width: 100%;
+        max-width: 330px;
+        border-radius: 0px;
+        overflow: hidden;
+        line-height: 0;
+        transition: transform 0.3s ease;
+    }
+
+    /* Efek hover sedikit agar interaktif */
+    .single-track-wrapper:hover {
+        transform: translateY(-5px);
+    }
+    /* --- RESPONSIVE DESKTOP SETTINGS --- */
+    @media (min-width: 1024px) {
+        /* Mengatur kontainer utama agar kartu tidak terlihat terlalu besar di layar lebar */
+        .stack-wrapper {
+            width: 380px;  /* Sedikit lebih lebar untuk desktop agar lebih elegan */
+            height: 500px; /* Sedikit lebih tinggi */
+            margin-top: -0px;
+        }
+        /* Mengatur area kontrol (tombol next/prev) agar lebih lebar */
+        .controls-area {
+            max-width: 450px;
+            bottom: 15px;
+        }
+
+        /* Memberikan efek hover pada kartu di desktop agar lebih interaktif */
+        .card-base:hover {
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+    }
+
+    .icon-sparkle {
+    position: absolute;
+    font-size: 1.2rem;
+    z-index: 5;
+}
+.top-right { top: 30px; right: 5px; }
+.bottom-left { bottom: 30px; left: 5px; }
+
+.photo-stack-art {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 40px;
+        animation: global-float 4s ease-in-out infinite;
+    }
+
+    /* Lembaran Foto */
+    .photo-leaf {
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        background: white;
+        border: 1px solid #ddd;
+        box-shadow: 2px 4px 10px rgba(0,0,0,0.1);
+        border-radius: 4px;
+        left: 5px;
+        top: 10px;
+    }
+
+    /* Posisi & Rotasi tiap lembar */
+    .p1 { transform: rotate(-15deg); background: #f9fafb; }
+    .p2 { transform: rotate(10deg); background: #f3f4f6; }
+    .p3 { 
+        transform: rotate(-5deg); 
+        z-index: 3; 
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+    }
+
+    /* Bagian dalam foto teratas */
+    .inner-photo {
+        width: 100%;
+        height: 70%;
+        background: #fbcfe8; /* Warna pink placeholder foto */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 2px;
+    }
+
+    .heart-icon {
+        font-size: 2rem;
+        animation: heartbeat 1.5s ease-in-out infinite;
+    }
+
+    /* --- ANIMASI --- */
+
+    /* Gerakan melayang seluruh stack */
+    @keyframes global-float {
+        0%, 100% { transform: translateY(0) rotate(0); }
+        50% { transform: translateY(-15px) rotate(5deg); }
+    }
+
+    /* Efek detak jantung di tengah foto */
+    @keyframes heartbeat {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+    }
+
+    .gamja-font {
+        font-family: 'Gamja Flower', cursive;
+    }
+</style>

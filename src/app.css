@@ -1,0 +1,21 @@
+/* src/app.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* KUNCI SCROLL TOTAL */
+:root, html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden; /* Hilangkan scrollbar */
+    overscroll-behavior: none; /* Matikan efek karet/bounce di iPhone */
+    position: fixed; /* Paksa diam di tempat */
+    margin: 0;
+    padding: 0;
+    touch-action: none; /* Matikan gesture zoom/pan default */
+}
+
+body {
+    background-color: #fff0f5; /* Warna dasar pink muda */
+    font-family: 'Inter', sans-serif;
+}
